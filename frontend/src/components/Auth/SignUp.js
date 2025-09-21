@@ -24,6 +24,14 @@ const SignUp = () => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
 
+  // Debug: Log environment and state
+  useEffect(() => {
+    console.log('🐛 SignUp Component Debug:');
+    console.log('  API URL:', process.env.REACT_APP_API_URL);
+    console.log('  Loading state:', loading);
+    console.log('  Error state:', error);
+  }, [loading, error]);
+
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
@@ -56,16 +64,24 @@ const SignUp = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    console.log('🚀 SignUp Form Submitted:');
+    console.log('  Username:', formData.username);
+    console.log('  Password length:', formData.password.length);
+    console.log('  Password validation:', passwordValidation);
+    
     if (!validatePassword(formData.password)) {
+      console.log('❌ Password validation failed');
       setValidationError('Password must meet all requirements');
       return;
     }
     
     if (formData.password !== formData.confirmPassword) {
+      console.log('❌ Passwords do not match');
       setValidationError('Passwords do not match');
       return;
     }
     
+    console.log('✅ Dispatching signUp action...');
     dispatch(signUp({
       username: formData.username,
       password: formData.password,
@@ -78,6 +94,21 @@ const SignUp = () => {
         <div className="auth-header">
           <h1>Sign Up</h1>
           <p>Create an account to get started</p>
+        </div>
+        
+        {/* Debug info - remove in production */}
+        <div style={{ 
+          background: '#f8f9fa', 
+          padding: '10px', 
+          marginBottom: '10px', 
+          fontSize: '12px',
+          border: '1px solid #dee2e6',
+          borderRadius: '4px'
+        }}>
+          <strong>Debug Info:</strong><br/>
+          API URL: {process.env.REACT_APP_API_URL || 'Not set'}<br/>
+          Loading: {loading.toString()}<br/>
+          Error: {error || 'None'}
         </div>
         
         <form onSubmit={handleSubmit} className="auth-form">
