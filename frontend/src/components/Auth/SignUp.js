@@ -20,21 +20,29 @@ const SignUp = () => {
   const [validationError, setValidationError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
 
-  // Debug: Log environment and state
-  useEffect(() => {
-    console.log('🐛 SignUp Component Debug:');
-    console.log('  API URL:', process.env.REACT_APP_API_URL);
-    console.log('  Loading state:', loading);
-    console.log('  Error state:', error);
-  }, [loading, error]);
-
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (loading) {
+      setLoadingMessage('Creating account...');
+      
+      // After 10 seconds, show cold start message
+      const timer = setTimeout(() => {
+        setLoadingMessage('Backend is starting up (this may take up to 60 seconds on first use)...');
+      }, 10000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingMessage('');
+    }
+  }, [loading]);
 
   const validatePassword = (password) => {
     const validation = {
@@ -64,29 +72,23 @@ const SignUp = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    console.log('🚀 SignUp Form Submitted:');
-    console.log('  Username:', formData.username);
-    console.log('  Password length:', formData.password.length);
-    console.log('  Password validation:', passwordValidation);
-    
     if (!validatePassword(formData.password)) {
-      console.log('❌ Password validation failed');
       setValidationError('Password must meet all requirements');
       return;
     }
     
     if (formData.password !== formData.confirmPassword) {
-      console.log('❌ Passwords do not match');
       setValidationError('Passwords do not match');
       return;
     }
     
-    console.log('✅ Dispatching signUp action...');
     dispatch(signUp({
       username: formData.username,
       password: formData.password,
     }));
   };
+
+  const isTimeoutError = error && error.includes('timeout');
 
   return (
     <div className="auth-container">
@@ -96,24 +98,37 @@ const SignUp = () => {
           <p>Create an account to get started</p>
         </div>
         
-        {/* Debug info - remove in production */}
-        <div style={{ 
-          background: '#f8f9fa', 
-          padding: '10px', 
-          marginBottom: '10px', 
-          fontSize: '12px',
-          border: '1px solid #dee2e6',
-          borderRadius: '4px'
-        }}>
-          <strong>Debug Info:</strong><br/>
-          API URL: {process.env.REACT_APP_API_URL || 'Not set'}<br/>
-          Loading: {loading.toString()}<br/>
-          Error: {error || 'None'}
-        </div>
-        
         <form onSubmit={handleSubmit} className="auth-form">
-          {(error || validationError) && (
-            <div className="error-message">{error || validationError}</div>
+          {error && (
+            <div className="error-message">
+              {isTimeoutError ? (
+                <div>
+                  <strong>Backend is starting up...</strong><br/>
+                  This happens on first use. Please wait 30-60 seconds and try again.<br/>
+                  <button 
+                    type="button" 
+                    onClick={() => window.open('https://chat-app-backend-p2y6.onrender.com/health', '_blank')}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      color: '#007bff', 
+                      textDecoration: 'underline', 
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      marginTop: '8px'
+                    }}
+                  >
+                    Click here to wake up the backend
+                  </button>
+                </div>
+              ) : (
+                error
+              )}
+            </div>
+          )}
+          
+          {validationError && (
+            <div className="error-message">{validationError}</div>
           )}
           
           <div className="form-group">
@@ -209,8 +224,25 @@ const SignUp = () => {
             className="auth-button"
             disabled={loading || !Object.values(passwordValidation).every(Boolean)}
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? loadingMessage || 'Creating account...' : 'Sign Up'}
           </button>
+          
+          {loading && (
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: '12px', 
+              fontSize: '14px', 
+              color: '#666',
+              lineHeight: '1.4'
+            }}>
+              {loadingMessage.includes('starting up') && (
+                <>
+                  <div>⏱️ First time loading can take up to 60 seconds</div>
+                  <div>🔄 Backend is waking up from sleep mode</div>
+                </>
+              )}
+            </div>
+          )}
         </form>
         
         <div className="auth-footer">

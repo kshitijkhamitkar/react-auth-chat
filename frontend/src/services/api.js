@@ -4,16 +4,13 @@ import axios from 'axios';
 console.log('🔍 Environment Variables Debug:');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-console.log('All REACT_APP_ vars:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
 
-// Use environment variable or fallback to local
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
 console.log('🚀 Final API_URL being used:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // 30 second timeout for Render cold starts
+  timeout: 90000, // Increased to 90 seconds for Render cold starts
   headers: {
     'Content-Type': 'application/json',
   },
@@ -52,11 +49,12 @@ api.interceptors.response.use(
     console.error('  Status:', error.response?.status);
     console.error('  Data:', error.response?.data);
     console.error('  Message:', error.message);
-    console.error('  Full error:', error);
     
     // Handle specific error cases
     if (error.code === 'ECONNABORTED') {
       console.error('⏱️ Request timed out - backend might be sleeping');
+      console.error('💡 Try again in a few seconds, or visit the backend health endpoint first');
+      console.error('🔗 Backend health: ' + API_URL.replace('/api', '/health'));
     }
     
     if (error.response?.status === 401) {
@@ -67,8 +65,9 @@ api.interceptors.response.use(
     
     // Handle network errors
     if (!error.response) {
-      console.error('🌐 Network error - check if backend is running and accessible');
+      console.error('🌐 Network error - backend might be sleeping or unavailable');
       console.error('  Backend URL:', API_URL);
+      console.error('💡 If this is the first request, try visiting the backend health endpoint first');
     }
     
     return Promise.reject(error);
